@@ -37,9 +37,9 @@ class MysqldbOperate(object):
                 self.conn = MySQLdb.connect(host=dict_mysql['host'], user=dict_mysql['user'], \
                                             passwd=dict_mysql['passwd'], db=dict_mysql['db'], port=dict_mysql['port'],
                                             charset='utf8', connect_timeout=30)
-                # self.cur = self.conn.cursor(MySQLdb.cursors.DictCursor)
+                self.cur = self.conn.cursor(MySQLdb.cursors.DictCursor)
                 # 更改为流式游标，查询数据也改为使用生成器
-                self.cur = self.conn.cursor(MySQLdb.cursors.SSCursor)
+                # self.cur = self.conn.cursor(MySQLdb.cursors.SSCursor)
             except Exception, e:
                 logger.error('__init__ fail:{}'.format(e))
                 raise
@@ -50,20 +50,19 @@ class MysqldbOperate(object):
         self.conn.close()
         self.conn = None
 
-    def _select_infos(self, cur):
-        result = cur.fetchone()
-        while result:
-            yield result
-            result = cur.fetchone()
-        return
-
-    def sql_query(self, sql):
+    def sql_query(self, sql, num=0):
         try:
+            result = ()
             if not sql:
                 raise ValueError('select sql not input')
             self.cur.execute(sql)
-            select_info = self._select_infos(self.cur)
-            return select_info
+            if num == 0:
+                result = self.cur.fetchall()
+            elif num == 1:
+                result = self.cur.fetchone()
+            else:
+                result = self.cur.fetchmany()
+            return result
         except Exception, e:
             logger.error('sql_query error:{}'.format(e))
             logger.error('sql_query select sql:{}'.format(sql))
