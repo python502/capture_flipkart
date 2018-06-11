@@ -53,7 +53,7 @@ HEADER_GET = '''
         Accept-Encoding:gzip, deflate, br
         Accept-Language:zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
         Cache-Control:no-cache
-        Connection:keep-alive
+        Connection:close
         User-Agent:{}
         '''
 
@@ -61,6 +61,8 @@ def getDict4str(strsource, match=':'):
     outdict = {}
     lists = strsource.split('\n')
     for list in lists:
+        if list.startswith('#'):
+            continue
         list = list.strip()
         if list:
             strbegin = list.find(match)
@@ -98,7 +100,7 @@ def write_into_mysql(queue):
                     if not os.path.exists(dir_name):
                         os.makedirs(dir_name)
                     get_count_sql = 'select count(*) from {}'.format(table)
-                    count_num = mysql.sql_query(get_count_sql)[0][0]
+                    count_num = mysql.sql_query(get_count_sql)[0]['count(*)']
                     if count_num == 0:
                         logger.error('select count is zero')
                         break
@@ -424,7 +426,8 @@ def get_page_info(queue, page_url_infos):
         group = Group()
         page_detail_infos = group.map(get_detail_info, product_urls)
         page_detail_infos = filter(check_null, page_detail_infos)
-        queue.put(page_detail_infos)
+        if page_detail_infos:
+            queue.put(page_detail_infos)
     except Exception, e:
         # if not isinstance(e, Flipkart500Exception):
         # logger.error('get_page_info page_url:{} error:{}'.format(page_url, e))
